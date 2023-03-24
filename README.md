@@ -11,8 +11,27 @@ A cli tool to use azure keyvaults as a secret store.
 ## Installation
 
 ```bash
-pip install -r requirements.txt
-pip install .
+pip3 install -r requirements.lock
+pip3 install .
+```
+
+To update the `requirements.lock` file, run `pip3 freeze -r requirements.txt > requirements.lock`.
+
+## Building a distributable pex file
+
+If you have the Python package `pex` installed, run
+
+```bash
+python setup.py bdist_pex
+```
+
+and find the pex file in the `dist/` folder. You can directly execute the pex
+file or copy/link it to your `~/bin/` folder:
+
+```bash
+cp dist/azpass-*.pex ~/bin/azpass
+# or
+ln -sf $(pwd)/dist/azpass-*.pex ~/bin/azpass
 ```
 
 ## Usage
@@ -24,6 +43,7 @@ Environments store you keyvault references that will be used to retrieve secrets
 ```bash
 azpass init
 ```
+
 ### Add a keyvault reference
 
 ```bash
@@ -33,13 +53,13 @@ azpass vault add my-resource-group/my-keyvault-name
 ### List secrets of the added keyvaults
 
 ```bash
-azpass secrets list
+azpass secret list
 ```
 
 or if you want to filter the secrets
 
 ```bash
-azpass secrets list pat
+azpass secret list pat
 ```
 
 ### More commands

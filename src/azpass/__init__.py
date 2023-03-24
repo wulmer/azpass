@@ -1,22 +1,28 @@
 # Authenticate with azure-identity and return a credential object
 
-import click
 from pathlib import Path
-from environment import Environment
-from vault import Vault
+
+import azure.core.exceptions
+import click
+
+from .environment import Environment
+from .vault import Vault
 
 env_path = Path.home() / ".azpass"
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 def azpass():
     """A cli tool to use azure keyvaults as a secret store."""
     pass
 
+
 @azpass.group()
 def vault():
     """Manage key vaults"""
+
 
 @vault.command()
 @click.argument("path", required=True)
@@ -26,30 +32,33 @@ def add(path):
     path: <resource-group>/<vault-name>
     """
     resource_group, name = parse_secret_path(path, True)
-    print(resource_group, name)
     Environment(env_path).add_vault(Vault(name, resource_group))
+
 
 @vault.command()
 @click.argument("name", required=True)
 def get(name):
     """Get a key vault.
-    
-    name: vault name    
+
+    name: vault name
     """
     vaults = Environment(env_path).get_vaults()
     for vault in vaults:
         if name == vault.name:
-            print(str(vault))
+            click.echo(str(vault))
+
 
 @vault.command()
 def list():
     """List all key vaults"""
-    print(Environment(env_path).get_vaults())
+    click.echo(Environment(env_path).get_vaults())
+
 
 @azpass.group()
 def secret():
     """Manage secrets"""
     pass
+
 
 @secret.command("get")
 @click.argument("path", required=True)
@@ -60,18 +69,18 @@ def get_s(path):
     vault_name, secret_name = parse_secret_path(path, True)
     if not vault_name:
         vaults = Environment(env_path).get_vaults()
-        secrets = [vault.get_secret(secret_name) for vault in vaults]
+        secrets = filter(
+            lambda v: v is not None, [vault.get_secret(secret_name) for vault in vaults]
+        )
         for secret in secrets:
-            if secret:
-                print(secret)
-            else:
-                print(f"Secret {secret_name} not found")
+            click.echo(secret)
+        raise click.ClickException(f"No secret found for `{path}`!")
     else:
         vault = Environment(env_path).get_vault(vault_name)
         if not vault:
-            print("Vault not found")
-            return
-        print(vault.get_secret(secret_name))
+            raise click.ClickException(f"Given vault `{vault_name}` not found")
+        click.echo(vault.get_secret(secret_name))
+
 
 @secret.command("find")
 @click.argument("find", required=True)
@@ -85,7 +94,8 @@ def find_s(find):
             vault_name, secret_name = parse_secret_path(r, True)
             vault = Environment(env_path).get_vault(vault_name)
             if vault:
-                print(f"{r}: {vault.get_secret(secret_name)}")        
+                click.echo(f"{r}: {vault.get_secret(secret_name)}")
+
 
 @secret.command("list")
 @click.argument("find", required=False)
@@ -99,14 +109,15 @@ def list_s(find):
     else:
         res = Environment(env_path).list_secret_names()
     for r in res:
-        print(r)
+        click.echo(r)
+
 
 @secret.command()
 @click.argument("path", required=True)
 @click.argument("secret-value", required=True)
 def set(path, secret_value):
     """Set a secret in a vault.
-    
+
     path: secret path in the format <vault-name>/<resource-group>
 
     secret-value: Value of the secret
@@ -114,14 +125,15 @@ def set(path, secret_value):
     vault_name, secret_name = parse_secret_path(path, False)
     vault = Environment(env_path).get_vault(vault_name)
     if not vault:
-        print("Vault not found")
-        return
+        raise click.ClickException("Vault not found")
     vault.set_secret(secret_name, secret_value)
+
 
 @azpass.command()
 def init():
     """Initialize a environment"""
     Environment(env_path)
+
 
 def parse_secret_path(path: str, rg_name_optional: bool):
     elems = path.split("/")
@@ -132,16 +144,21 @@ def parse_secret_path(path: str, rg_name_optional: bool):
         elif switch == 2:
             return elems[0], elems[1]
         else:
-            raise ValueError("Invalid secret path, expected format: <vault-name>/<secret-name>")
+            raise ValueError(
+                "Invalid secret path, expected format: <vault-name>/<secret-name>"
+            )
 
     else:
         if len(elems) != 2:
-            raise ValueError("Invalid secret path, expected format: <vault-name>/<secret-name>")
+            raise ValueError(
+                "Invalid secret path, expected format: <vault-name>/<secret-name>"
+            )
         return elems[0], elems[1]
-    
+
 
 def main():
     azpass()
+
 
 if __name__ == "__main__":
     main()
