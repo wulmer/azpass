@@ -1,0 +1,44 @@
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+import time
+import json
+class Vault():
+    """Vault class"""
+
+    def __init__(self, name: str, resource_group: str):
+        self.name = name
+        self.resource_group = resource_group
+        self.client = SecretClient(
+            vault_url=f"https://{self.name.lower()}.vault.azure.net",
+            credential=DefaultAzureCredential(),
+        )
+    
+    def __str__(self):
+        return f"Vault(name={self.name}, resource_group={self.resource_group})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
+    
+    def get_secret(self, secret_name):
+        """Get a secret from the vault"""
+        self.client.get_secret(secret_name)
+        return self.client.get_secret(secret_name).value
+
+    def set_secret(self, secret_name, secret_value):
+        """Set a secret in the vault"""
+        self.client.set_secret(secret_name, secret_value)
+
+    def delete_secret(self, secret_name):
+        """Delete a secret from the vault"""
+        self.client.begin_delete_secret(secret_name)
+        self.client.purge_deleted_secret(secret_name)
+
+    def list_secret_names(self) -> list[str]:
+        """List all secrets names in the vault"""
+        secrets: list[str] = []
+        secrets_p = self.client.list_properties_of_secrets()
+        for secret_p in secrets_p:
+            # skip a secret if it has no name
+            if secret_p.name:
+                secrets.append(secret_p.name)
+        return secrets
