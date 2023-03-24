@@ -45,8 +45,8 @@ class Environment():
     def get_vaults(self):
         return self.vaults
     
-    def list_secret_names(self, find: str = ""):
-        names = []
+    def list_secret_names(self, find: str = "") -> list[str]:
+        names: list[str] = []
         for vault in self.vaults:
             for name in vault.list_secret_names():
                 if find in name:

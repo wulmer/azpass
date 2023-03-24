@@ -62,13 +62,30 @@ def get_s(path):
         vaults = Environment(env_path).get_vaults()
         secrets = [vault.get_secret(secret_name) for vault in vaults]
         for secret in secrets:
-            print(secret)
+            if secret:
+                print(secret)
+            else:
+                print(f"Secret {secret_name} not found")
     else:
         vault = Environment(env_path).get_vault(vault_name)
         if not vault:
             print("Vault not found")
             return
         print(vault.get_secret(secret_name))
+
+@secret.command("find")
+@click.argument("find", required=True)
+def find_s(find):
+    """Find secrets in all vaults.
+    find: Filter secrets by string
+    """
+    res = Environment(env_path).list_secret_names(find)
+    for r in res:
+        if find in r:
+            vault_name, secret_name = parse_secret_path(r, True)
+            vault = Environment(env_path).get_vault(vault_name)
+            if vault:
+                print(f"{r}: {vault.get_secret(secret_name)}")        
 
 @secret.command("list")
 @click.argument("find", required=False)

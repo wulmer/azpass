@@ -1,5 +1,6 @@
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
+from azure.core.exceptions import ResourceNotFoundError
 import time
 import json
 class Vault():
@@ -19,11 +20,14 @@ class Vault():
     def __repr__(self) -> str:
         return self.__str__()
     
-    def get_secret(self, secret_name):
+    def get_secret(self, secret_name) -> str | None:
         """Get a secret from the vault"""
-        self.client.get_secret(secret_name)
-        return self.client.get_secret(secret_name).value
-
+        try:
+            secret = self.client.get_secret(secret_name).value
+            return secret
+        except (ResourceNotFoundError):
+            return None
+            
     def set_secret(self, secret_name, secret_value):
         """Set a secret in the vault"""
         self.client.set_secret(secret_name, secret_value)
