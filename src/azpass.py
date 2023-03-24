@@ -9,7 +9,7 @@ env_path = Path.home() / ".azpass"
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-@click.group()
+@click.group(context_settings=CONTEXT_SETTINGS)
 def azpass():
     """A cli tool to use azure keyvaults as a secret store."""
     pass
